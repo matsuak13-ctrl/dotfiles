@@ -2,8 +2,9 @@ name: Daily AI & Notion News Mailer
 
 on:
   schedule:
-    # 8:00 AM JST is 23:00 UTC (previous day)
-    - cron: '0 23 * * *'
+    # 7:47 AM JST is 22:47 UTC (previous day)
+    # Using an odd minute ('47') to avoid peak load delays on GitHub Actions scheduler
+    - cron: '47 22 * * *'
   workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
 
 jobs:
