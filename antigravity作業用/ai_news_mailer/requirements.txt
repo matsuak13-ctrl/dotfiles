@@ -1,0 +1,5 @@
+google-genai
+duckduckgo_search
+python-dotenv
+feedparser
+beautifulsoup4
