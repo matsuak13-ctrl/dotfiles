@@ -22,10 +22,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f ai_news_mailer/requirements.txt ]; then
-            pip install -r ai_news_mailer/requirements.txt
+          if [ -f "antigravity作業用/ai_news_mailer/requirements.txt" ]; then
+            pip install -r "antigravity作業用/ai_news_mailer/requirements.txt"
           else
-            echo "Error: requirements.txt not found at ai_news_mailer/requirements.txt"
+            echo "Error: requirements.txt not found at antigravity作業用/ai_news_mailer/requirements.txt"
             exit 1
           fi
 
@@ -37,5 +37,5 @@ jobs:
           RECIPIENT_ADDRESS: ${{ secrets.RECIPIENT_ADDRESS }}
           SEARCH_LIMIT_DAYS: 3
         run: |
-          cd ai_news_mailer
+          cd "antigravity作業用/ai_news_mailer"
           python main.py
