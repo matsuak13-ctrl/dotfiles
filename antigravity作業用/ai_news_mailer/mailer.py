@@ -23,11 +23,12 @@ def send_html_email(html_body: str) -> bool:
         logger.warning("Empty HTML body. Aborting email sending.")
         return False
 
-    today_str = datetime.datetime.now().strftime("%Y/%m/%d")
+    jst = datetime.timezone(datetime.timedelta(hours=9))
+    today_str = datetime.datetime.now(jst).strftime("%Y/%m/%d")
 
     # Set up email headers
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"【AI & Notion 朝刊】{today_str} の厳選ニュース5選"
+    msg["Subject"] = f"【AI & Notion 朝刊】{today_str} の厳選ニュース10選"
     msg["From"] = config.GMAIL_ADDRESS
     msg["To"] = config.RECIPIENT_ADDRESS
 
