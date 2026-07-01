@@ -45,6 +45,12 @@ def get_badge_styles(source: str) -> tuple[str, str]:
         return "#F59E0B", "#FFF7E6"
     elif "zenn" in source_lower:
         return "#3EA8FF", "#EBF5FF"
+    elif "qiita" in source_lower:
+        return "#55C500", "#EAF8E6"
+    elif "itmedia" in source_lower:
+        return "#D32F2F", "#FFEBEE"
+    elif "はてな" in source_lower or "hatena" in source_lower:
+        return "#00A4DE", "#E6F6FC"
     elif "agi" in source_lower or "ジェネトピ" in source_lower:
         return "#8B5CF6", "#F5F3FF"
     elif "yahoo" in source_lower:
@@ -55,7 +61,8 @@ def get_badge_styles(source: str) -> tuple[str, str]:
 
 def build_html_email(articles: list) -> str:
     """Builds a premium HTML email template with curated news articles."""
-    today = datetime.datetime.now().strftime("%Y年%m月%d日")
+    jst = datetime.timezone(datetime.timedelta(hours=9))
+    today = datetime.datetime.now(jst).strftime("%Y年%m月%d日")
 
     articles_html = ""
     for idx, art in enumerate(articles):
@@ -236,7 +243,7 @@ def build_html_email(articles: list) -> str:
     </div>
     <div class="footer">
       <p>このメールは AI & Notion ニュース自動配信システム によって自動生成されています。</p>
-      <p>© {datetime.datetime.now().year} AI & Notion News Mailer. All rights reserved.</p>
+      <p>© {datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).year} AI & Notion News Mailer. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -288,14 +295,14 @@ def call_gemini_with_retry(
     raise RuntimeError("Failed to get response after max retries due to 503")
 
 
-def curate_and_generate_html(raw_items: list[dict]) -> str:
+def curate_and_generate_html(raw_items: list[dict]) -> tuple[str, list[dict]]:
     """Curates collected news using gemini-3.5-flash (with retry and fallback to
 
     gemini-2.5-flash-lite) and generates a stylized HTML email body.
     """
     if not raw_items:
         logger.warning("No raw news items to curate.")
-        return ""
+        return "", []
 
     # Prepare input content
     formatted_items = []
@@ -332,12 +339,17 @@ def curate_and_generate_html(raw_items: list[dict]) -> str:
 - **件数制限**: 必ず【ちょうど10件】を厳選してください。
 - **日本語要約**: 各ニュースの要約は【3つの箇条書き】で作成し、分かりやすく具体的な内容にしてください。
 - **最新優先**: できるだけ直近の新しい情報（スニペットから推測されるもの）を優先してください。
+- **ソースの多様性の確保**: 厳選する10件のニュースが特定のソース（例: Zennなど）に偏らないようにしてください。特に、Zenn（「Zenn (AI Topic)」や「Zenn (Notion Topic)」など）からの選定は【最大でも3件まで】とし、Qiita、ITmedia NEWS、公式サイト（Notion, OpenAI, Google, Microsoft）、Yahoo!ニュースなど、多様なソースから幅広くピックアップしてください。
 
 【収集されたニュース一覧】
 {items_text}
 """
 
-    client = genai.Client(api_key=config.GEMINI_API_KEY)
+    # Set a timeout (120,000ms = 120s) to prevent infinite hanging during API issues
+    client = genai.Client(
+        api_key=config.GEMINI_API_KEY,
+        http_options={"timeout": 120000}
+    )
     response_text = None
 
     try:
@@ -364,17 +376,17 @@ def curate_and_generate_html(raw_items: list[dict]) -> str:
             logger.error(
                 f"Fallback model gemini-2.5-flash-lite also failed: {fallback_err}"
             )
-            return ""
+            return "", []
 
     if not response_text:
-        return ""
+        return "", []
 
     try:
         curated_data = json.loads(response_text)
         articles = curated_data.get("articles", [])
         if not articles:
             logger.warning("No articles returned in the curated data JSON.")
-            return ""
+            return "", []
 
         # Log selection
         logger.info(f"Successfully curated {len(articles)} articles:")
@@ -382,8 +394,8 @@ def curate_and_generate_html(raw_items: list[dict]) -> str:
             logger.info(f"  #{idx+1}: [{art.get('source')}] {art.get('title')}")
 
         # Build HTML
-        return build_html_email(articles)
+        return build_html_email(articles), articles
 
     except Exception as e:
         logger.error(f"Error parsing Gemini JSON response: {e}")
-        return ""
+        return "", []
