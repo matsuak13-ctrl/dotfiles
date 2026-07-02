@@ -14,6 +14,12 @@ GOOGLE_DOC_ID = os.getenv("GOOGLE_DOC_ID")
 GAS_WEBAPP_URL = os.getenv("GAS_WEBAPP_URL")
 GAS_ACCESS_TOKEN = os.getenv("GAS_ACCESS_TOKEN")
 
+GDOC_ENABLED = bool(
+    GOOGLE_DOC_ID and GOOGLE_DOC_ID != "your_google_doc_id_here" and
+    GAS_WEBAPP_URL and GAS_WEBAPP_URL != "your_gas_webapp_url_here" and
+    GAS_ACCESS_TOKEN and GAS_ACCESS_TOKEN != "your_custom_secure_token_here"
+)
+
 try:
     SEARCH_LIMIT_DAYS = int(os.getenv("SEARCH_LIMIT_DAYS", "3"))
 except ValueError:
@@ -39,18 +45,6 @@ def validate_config() -> tuple[bool, list[str]]:
     if not GMAIL_APP_PASSWORD or GMAIL_APP_PASSWORD == "xxxx_xxxx_xxxx_xxxx":
         errors.append(
             "GMAIL_APP_PASSWORD is not set or is still the default placeholder value."
-        )
-    if not GOOGLE_DOC_ID or GOOGLE_DOC_ID == "your_google_doc_id_here":
-        errors.append(
-            "GOOGLE_DOC_ID is not set or is still the default placeholder value."
-        )
-    if not GAS_WEBAPP_URL or GAS_WEBAPP_URL == "your_gas_webapp_url_here":
-        errors.append(
-            "GAS_WEBAPP_URL is not set or is still the default placeholder value."
-        )
-    if not GAS_ACCESS_TOKEN or GAS_ACCESS_TOKEN == "your_custom_secure_token_here":
-        errors.append(
-            "GAS_ACCESS_TOKEN is not set or is still the default placeholder value."
         )
 
     return len(errors) == 0, errors
