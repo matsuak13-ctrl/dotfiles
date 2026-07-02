@@ -6,7 +6,7 @@ import time
 from urllib.parse import urlparse
 import feedparser
 from bs4 import BeautifulSoup
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 # Setup logging
 logging.basicConfig(
@@ -143,12 +143,33 @@ def search_all_news(limit_days: int) -> list[dict]:
         ("Zenn (Notion Topic)", "https://zenn.dev/topics/notion/feed"),
         ("ジェネトピ", "https://note.com/genai_topic/rss"),
         ("AGIラボ", "https://chatgpt-lab.com/feed"),
+        ("ITmedia NEWS", "https://rss.itmedia.co.jp/rss/1.0/news_fed.xml"),
+        ("Qiita (Machine Learning)", "https://qiita.com/tags/machinelearning/feed.atom"),
+        ("Qiita (Notion)", "https://qiita.com/tags/notion/feed.atom"),
+        ("はてなブックマーク (IT)", "https://b.hatena.ne.jp/hotentry/it.rss"),
     ]
+
+    # Keywords for filtering broad tech feeds
+    ai_keywords = [
+        "ai", "生成ai", "llm", "gpt", "gemini", "claude", "openai", "notion", 
+        "エージェント", "機械学習", "ディープラーニング", "人工知能", "copilot", 
+        "llama", "stable diffusion", "midjourney", "chatgpt", "プロンプト", "dify"
+    ]
+    broad_feeds = {"ITmedia NEWS", "はてなブックマーク (IT)"}
 
     for name, url in rss_feeds:
         feed_items = parse_rss_feed(url, limit_days)
         for item in feed_items:
             item["source"] = name
+
+            # Filter broad feeds to only keep AI/Notion relevant articles
+            if name in broad_feeds:
+                title_lower = item["title"].lower()
+                snippet_lower = item["snippet"].lower()
+                is_relevant = any(kw in title_lower or kw in snippet_lower for kw in ai_keywords)
+                if not is_relevant:
+                    continue
+
             norm_url = normalize_url(item["url"])
             if norm_url not in seen_urls:
                 seen_urls.add(norm_url)
@@ -186,6 +207,10 @@ def search_all_news(limit_days: int) -> list[dict]:
                 item["source"] = "AGIラボ"
             elif "note.com/genai_topic" in url:
                 item["source"] = "ジェネトピ"
+            elif "qiita.com" in url:
+                item["source"] = "Qiita"
+            elif "itmedia.co.jp" in url:
+                item["source"] = "ITmedia NEWS"
 
             norm_url = normalize_url(url)
             if norm_url not in seen_urls:

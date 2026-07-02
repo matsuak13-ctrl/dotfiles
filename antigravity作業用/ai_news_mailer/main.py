@@ -4,6 +4,7 @@ import config
 from curator import curate_and_generate_html
 from mailer import send_html_email
 from searcher import search_all_news
+from gdocs_writer import append_articles_to_gdoc
 
 # Setup logging to stdout
 logging.basicConfig(
@@ -44,7 +45,7 @@ def main():
 
     # 3. Curate, summarize and generate HTML body using Gemini API
     logger.info("Step 2: Curating top 10 news and generating HTML body...")
-    html_body = curate_and_generate_html(raw_news)
+    html_body, articles = curate_and_generate_html(raw_news)
 
     if not html_body:
         logger.error(
@@ -59,6 +60,15 @@ def main():
     success = send_html_email(html_body)
 
     if success:
+        logger.info("Email sent successfully. Now archiving news to Google Doc...")
+        
+        # 5. Archive to Google Doc for NotebookLM sync
+        doc_success = append_articles_to_gdoc(articles)
+        if doc_success:
+            logger.info("Successfully archived news to Google Doc.")
+        else:
+            logger.warning("Could not archive news to Google Doc (check credentials or document ID).")
+
         logger.info(
             "=== AI & Notion News Mailer execution completed successfully! ==="
         )

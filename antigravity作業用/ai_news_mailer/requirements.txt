@@ -1,5 +1,6 @@
 google-genai
-duckduckgo_search
+ddgs
 python-dotenv
 feedparser
 beautifulsoup4
+requests
