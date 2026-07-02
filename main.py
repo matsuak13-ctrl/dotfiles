@@ -60,14 +60,16 @@ def main():
     success = send_html_email(html_body)
 
     if success:
-        logger.info("Email sent successfully. Now archiving news to Google Doc...")
-        
-        # 5. Archive to Google Doc for NotebookLM sync
-        doc_success = append_articles_to_gdoc(articles)
-        if doc_success:
-            logger.info("Successfully archived news to Google Doc.")
+        # 5. Archive to Google Doc for NotebookLM sync if configured
+        if config.GDOC_ENABLED:
+            logger.info("Now archiving news to Google Doc...")
+            doc_success = append_articles_to_gdoc(articles)
+            if doc_success:
+                logger.info("Successfully archived news to Google Doc.")
+            else:
+                logger.warning("Could not archive news to Google Doc (check credentials or document ID).")
         else:
-            logger.warning("Could not archive news to Google Doc (check credentials or document ID).")
+            logger.info("Google Doc archiving is disabled (configuration is missing or incomplete).")
 
         logger.info(
             "=== AI & Notion News Mailer execution completed successfully! ==="
