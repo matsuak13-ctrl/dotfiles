@@ -40,3 +40,44 @@ jobs:
           SEARCH_LIMIT_DAYS: 3
         run: |
           python main.py
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RECIPIENT_ADDRESS: ${{ secrets.RECIPIENT_ADDRESS }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'EOF'
+          import os
+          import smtplib
+          import datetime
+          from email.mime.text import MIMEText
+
+          jst = datetime.timezone(datetime.timedelta(hours=9))
+          today_str = datetime.datetime.now(jst).strftime("%Y/%m/%d %H:%M")
+
+          gmail_address = os.environ["GMAIL_ADDRESS"]
+          gmail_app_password = os.environ["GMAIL_APP_PASSWORD"]
+          recipient_address = os.environ["RECIPIENT_ADDRESS"]
+          run_url = os.environ["RUN_URL"]
+
+          body = (
+              f"AI & Notion News Mailer の実行が失敗しました。\n\n"
+              f"日時: {today_str} JST\n"
+              f"実行ログ: {run_url}\n\n"
+              f"今日のニュース配信は届いていません。上記ログでエラー内容を確認してください。"
+          )
+
+          msg = MIMEText(body, "plain", "utf-8")
+          msg["Subject"] = f"【AI News Mailer】配信失敗のお知らせ ({today_str} JST)"
+          msg["From"] = gmail_address
+          msg["To"] = recipient_address
+
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+              server.login(gmail_address, gmail_app_password)
+              server.sendmail(gmail_address, recipient_address, msg.as_string())
+
+          print("Failure notification email sent.")
+          EOF
